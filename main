@@ -1,0 +1,471 @@
+-- DROPS TABLES IF THEY EXIST --
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE Student CASCADE CONSTRAINTS';
+	EXECUTE IMMEDIATE 'DROP TABLE Facilities CASCADE CONSTRAINTS';
+	EXECUTE IMMEDIATE 'DROP TABLE workOrder CASCADE CONSTRAINTS';
+	EXECUTE IMMEDIATE 'DROP TABLE Technician CASCADE CONSTRAINTS';
+	EXECUTE IMMEDIATE 'DROP TABLE Materials CASCADE CONSTRAINTS';
+	EXECUTE IMMEDIATE 'DROP TABLE Status CASCADE CONSTRAINTS';
+	EXECUTE IMMEDIATE 'DROP TABLE Time CASCADE CONSTRAINTS';
+	EXECUTE IMMEDIATE 'DROP TABLE Feedback CASCADE CONSTRAINTS';
+	EXECUTE IMMEDIATE 'DROP TABLE StudentX CASCADE CONSTRAINTS';
+EXCEPTION
+    WHEN OTHERS THEN
+    	NULL;
+END;
+/
+
+-- CREATES TABLES --
+
+-- Student Table (doesn't set foreign keys)
+CREATE TABLE Student (
+	student_id INT PRIMARY KEY,
+    first_name VARCHAR(20),
+    last_name VARCHAR(20),
+    facilities_id INT,
+    order_id INT
+);
+
+-- Facilities Table (set foreign key)
+CREATE TABLE Facilities (
+	facilities_id INT PRIMARY KEY,
+    building_type VARCHAR(10),
+    building_name VARCHAR(15),
+    room_number INT,
+    student_id INT,
+    FOREIGN KEY(student_id) REFERENCES Student(student_id) 
+);
+
+-- Order Table (doesn't set ALL foreign keys)
+CREATE TABLE workOrder (
+	order_id INT PRIMARY KEY,
+    problem VARCHAR(100),
+    student_id INT,
+    FOREIGN KEY(student_id) REFERENCES Student(student_id) ,
+    technician_id INT,
+    materials_id INT,
+    status_id INT,
+    time_id INT,
+    feedback_id INT
+);
+
+-- Set Student tables foreign keys
+ALTER TABLE Student
+	ADD FOREIGN KEY (facilities_id)
+	REFERENCES facilities(facilities_id);
+
+ALTER TABLE Student
+	ADD FOREIGN KEY (order_id)
+	REFERENCES workOrder(order_id);
+
+-- Technician Table (set foreign key)
+CREATE TABLE Technician (
+	technician_id INT PRIMARY KEY,
+    technician_name VARCHAR(20),
+    technician_dpt VARCHAR(20),
+    order_id INT,
+    FOREIGN KEY(order_id) REFERENCES workOrder(order_id) 
+);
+
+-- Materials Table (set foreign key)
+CREATE TABLE Materials (
+	materials_id INT PRIMARY KEY,
+    materials_type VARCHAR(10),
+    materials_costs INT,
+    order_id INT,
+    FOREIGN KEY(order_id) REFERENCES workOrder(order_id) 
+);
+
+-- Status Table (set foreign key)
+CREATE TABLE Status (
+	status_id INT PRIMARY KEY,
+    status_level VARCHAR(10), -- (reported, examined, completed)
+    order_id INT,
+	FOREIGN KEY(order_id) REFERENCES workOrder(order_id) 
+);
+
+-- Time Table (set foreign key)
+CREATE TABLE Time (
+	time_id INT PRIMARY KEY,
+    problem_start_date DATE,
+    order_request_date DATE,
+    order_completion_date DATE,
+    order_id INT,
+	FOREIGN KEY(order_id) REFERENCES workOrder(order_id) 
+);
+
+-- Feedback Table (set foreign key)
+CREATE TABLE Feedback (
+	feedback_id INT PRIMARY KEY,
+    feedback VARCHAR(100),
+    order_id INT,
+	FOREIGN KEY(order_id) REFERENCES workOrder(order_id) 
+);
+
+-- StudentX Table (this is because students can have multiple orders)
+CREATE TABLE StudentX (
+	order_id INT PRIMARY KEY,
+    student_id INT
+);
+
+-- INPUTS DATA --
+
+-- Makes a few students (there aren't any facilities or orders yet)
+INSERT INTO Student VALUES (0, 'Jonathan', 'Ganel-Constant', NULL, NULL);
+INSERT INTO Student VALUES (1, 'Zelda', 'Miller', NULL, NULL);
+INSERT INTO Student VALUES (2, 'Joseph', 'Ross', NULL, NULL);
+INSERT INTO Student VALUES (3, 'Maddy', 'Pollack', NULL, NULL);
+INSERT INTO Student VALUES (4, 'Ellis', 'Lefcoe', NULL, NULL);
+INSERT INTO Student VALUES (5, 'Dane', 'Rice', NULL, NULL);
+INSERT INTO Student VALUES (6, 'Angie', 'Singh', NULL, NULL);
+INSERT INTO Student VALUES (7, 'Ray', 'Cohen', NULL, NULL);
+INSERT INTO Student VALUES (8, 'Nannie', 'Mayer', NULL, NULL);
+INSERT INTO Student VALUES (9, 'Brad', 'Hatcher', NULL, NULL);
+INSERT INTO Student VALUES (10, 'Rory', 'Lawson', NULL, NULL);
+
+-- Makes the facilities (pair them with the students we have)
+INSERT INTO Facilities VALUES (0, 'Apartment', 'Walker', 3016, 0);
+UPDATE Student
+	SET facilities_id = 0
+	WHERE student_id = 0;
+
+INSERT INTO Facilities VALUES (1, 'Apartment', 'Walker', 1234, 1);
+UPDATE Student
+	SET facilities_id = 1
+	WHERE student_id = 1;
+
+INSERT INTO Facilities VALUES (2, 'Dorm', 'Chesapeake', 205, 2);
+UPDATE Student
+	SET facilities_id = 2
+	WHERE student_id = 2;
+
+INSERT INTO Facilities VALUES (3, 'Apartment', 'Gunpowder', 22, 3);
+UPDATE Student
+	SET facilities_id = 3
+	WHERE student_id = 3;
+
+INSERT INTO Facilities VALUES (4, 'Suite', 'Harbor', 328, 4);
+UPDATE Student
+	SET facilities_id = 4
+	WHERE student_id = 4;
+
+INSERT INTO Facilities VALUES (5, 'Suite', 'Erikson', 027, 5);
+UPDATE Student
+    SET facilities_id = 5
+    WHERE student_id = 5;
+
+INSERT INTO Facilities VALUES (6, 'Apartment', 'Wye', 21, 6);
+UPDATE Student
+    SET facilities_id = 6
+    WHERE student_id = 6;
+
+INSERT INTO Facilities VALUES (7, 'Apartment', 'Walker', 3016, 7);
+UPDATE Student
+    SET facilities_id = 7
+    WHERE student_id = 7;
+
+-- Student 8, Nannie Mayer, is a commuter, so she has no facility 
+
+INSERT INTO Facilities VALUES (9, 'Dorm', 'Susquehanna', 318, 9);
+UPDATE Student
+    SET facilities_id = 9
+    WHERE student_id = 9;
+
+INSERT INTO Facilities VALUES (10, 'Suite', 'Harbor', 491, 10);
+UPDATE Student
+    SET facilities_id = 10
+    WHERE student_id = 10;
+
+-- Makes the orders 
+INSERT INTO workOrder VALUES (0, 'Our laundry room flooded from the walls', 0, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO Technician VALUES (100, 'Greg Capecci', 'Management', 0);
+INSERT INTO Materials VALUES (200, 'Paint', 20, 0);
+INSERT INTO Status VALUES (300, 'examined', 0); 
+INSERT INTO Time VALUES (400, DATE '2024-10-31', DATE '2024-11-01', NULL, 0);
+INSERT INTO Feedback VALUES (500, NULL, 0);
+UPDATE workOrder
+	SET technician_id = 100, materials_id = 200, status_id = 300, time_id = 400, feedback_id = 500
+	WHERE order_id = 0;
+UPDATE Student
+	SET order_id = 0
+	WHERE student_id = 0;
+
+INSERT INTO workOrder VALUES (1, 'Our trash disposal does not work anymore.', 2, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO Technician VALUES (101, 'Thomas Hanks', 'Plumber', 1);
+INSERT INTO Materials VALUES (201, 'Tubing', 37, 1);
+INSERT INTO Status VALUES (301, 'reported', 1);
+INSERT INTO Time VALUES (401, DATE '2024-11-13', NULL, NULL, 1);
+INSERT INTO Feedback VALUES (501, NULL, 1);
+UPDATE workOrder
+	SET technician_id = 101, materials_id = 201, status_id = 301, time_id = 401, feedback_id = 501
+	WHERE order_id = 1;
+UPDATE Student
+	SET order_id = 1
+	WHERE student_id = 2;
+
+INSERT INTO workOrder VALUES (2, 'I think we have rats in the walls.', 3, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO Technician VALUES (102, 'Meghan Stevens', 'Exterminator', 2);
+INSERT INTO Materials VALUES (202, 'Rat poison', 10, 2);
+INSERT INTO Status VALUES (302, 'completed', 2);
+INSERT INTO Time VALUES (402, DATE '2024-09-25', DATE '2024-09-26', DATE '2024-10-01', 2);
+INSERT INTO Feedback VALUES (502, 'Thanks for getting the rats, we are all good now.', 2);
+UPDATE workOrder
+	SET technician_id = 102, materials_id = 202, status_id = 302, time_id = 402, feedback_id = 502
+	WHERE order_id = 2;
+UPDATE Student
+	SET order_id = 2
+	WHERE student_id = 3;
+
+INSERT INTO workOrder VALUES (3, 'We got robbed', 1, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO Technician VALUES (103, 'Terry Crews', 'Police', 3);
+INSERT INTO Materials VALUES (203, 'None', 0, 3);
+INSERT INTO Status VALUES (303, 'reported', 3);
+INSERT INTO Time VALUES (403, DATE '2023-04-26', NULL, NULL, 3);
+INSERT INTO Feedback VALUES (503, NULL, 3);
+UPDATe workOrder
+    SET technician_id = 103, materials_id = 203, status_id = 303, time_id = 403, feedback_id = 503
+    WHERE order_id = 3;
+UPDATE Student
+    SET order_id = 3
+    WHERE student_id = 1;
+
+INSERT INTO workOrder VALUES (4, 'Our toilet is clogged', 4, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO Technician VALUES (104, 'Thomas Hanks', 'Plumber', 4);
+INSERT INTO Materials VALUES (204, 'Plunger', 5, 4);
+INSERT INTO Status VALUES (304, 'examined', 4);
+INSERT INTO Time VALUES (404, DATE '2024-05-01', DATE '2024-05-11', NULL, 4);
+INSERT INTO Feedback VALUES (504, NULL, 4);
+UPDATE workOrder
+    SET technician_id = 104, materials_id = 204, status_id = 304, time_id = 404, feedback_id = 504
+    WHERE order_id = 4;
+UPDATE Student
+    SET order_id = 4
+    WHERE student_id = 4;
+INSERT INTO StudentX VALUES (4, 4);
+
+INSERT INTO workOrder VALUES (5, 'Our doors need Shabbat friendly keys', 5, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO Technician VALUES (105, 'Greg Capecci', 'Management', 5);
+INSERT INTO Materials VALUES (205, 'Locks/keys', 100, 5);
+INSERT INTO Status VALUES (305, 'completed', 5);
+INSERT INTO Time VALUES (405, DATE '2024-08-25', DATE '2024-08-26', DATE '2024-09-01', 5);
+INSERT INTO Feedback VALUES (505, 'The keys work great!', 5);
+UPDATE workOrder
+    SET technician_id = 105, materials_id = 205, status_id = 305, time_id = 405, feedback_id = 505
+    WHERE order_id = 5;
+UPDATE Student
+    SET order_id = 5
+    WHERE student_id = 5;
+
+INSERT INTO workOrder VALUES (6, 'Our lights broke', 6, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO Technician VALUES (106, 'Steve Gates', 'Electrician', 6);
+INSERT INTO Materials VALUES (206, 'Wires', 20, 6);
+INSERT INTO Status VALUES (306, 'reported', 6);
+INSERT INTO Time VALUES (406, DATE '2021-07-26', NULL, NULL, 6);
+INSERT INTO Feedback VALUES (506, NULL, 6);
+UPDATE workOrder
+    SET technician_id = 106, materials_id = 206, status_id = 306, time_id = 406, feedback_id = 506
+    WHERE order_id = 6;
+UPDATE Student
+    SET order_id = 6
+    WHERE student_id = 6;
+    
+INSERT INTO workOrder VALUES (7, 'Our shower only gives freezing water', 7, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO Technician VALUES (107, 'Thomas Hanks', 'Plumber', 7);
+INSERT INTO Materials VALUES (207, 'Heater', 50, 7);
+INSERT INTO Status VALUES (307, 'examined', 7);
+INSERT INTO Time VALUES (407, DATE '2020-06-06', DATE '2020-06-10', NULL, 7);
+INSERT INTO Feedback VALUES (507, NULL, 7);
+UPDATE workOrder
+    SET technician_id = 107, materials_id = 207, status_id = 307, time_id = 407, feedback_id = 507
+    WHERE order_id = 7;
+UPDATE Student
+    SET order_id = 7
+    WHERE student_id = 7;
+
+INSERT INTO workOrder VALUES (8, 'I lost my ID', 9, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO Technician VALUES (108, 'Greg Capecci', 'Management', 8);
+INSERT INTO Materials VALUES (208, 'Temp ID', 0, 8);
+INSERT INTO Status VALUES (308, 'completed', 8);
+INSERT INTO Time VALUES (408, DATE '2022-08-10', DATE '2022-08-10', DATE '2022-08-10', 8);
+INSERT INTO Feedback VALUES (508, 'Fast service', 8);
+UPDATE workOrder
+    SET technician_id = 108, materials_id = 208, status_id = 308, time_id = 408, feedback_id = 508
+    WHERE order_id = 8;
+UPDATE Student
+    SET order_id = 8
+    WHERE student_id = 9;
+
+-- 6. student 4, PROBLEM, Meghan Stevens examined
+INSERT INTO workOrder VALUES (9, 'There is a wasp nest outside my door', 4, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO Technician VALUES (109, 'Meghan Stevens', 'Exterminator', 9);
+INSERT INTO Materials VALUES (209, 'Wasp spray', 7, 9);
+INSERT INTO Status VALUES (309, 'examined', 9);
+INSERT INTO Time VALUES (409, DATE '2024-11-19', DATE '2024-11-22', NULL, 9);
+INSERT INTO Feedback VALUES (509, NULL, 9);
+UPDATE workOrder
+    SET technician_id = 109, materials_id = 209, status_id = 309, time_id = 409, feedback_id = 509
+    WHERE order_id = 9;
+UPDATE Student
+    SET order_id = 9
+    WHERE student_id = 4;
+INSERT INTO StudentX VALUES (9, 4);
+
+-- SELECT QUERIES -- 
+-- 1. which buildings / rooms have multiple issues (will be Walker)
+SELECT
+	building_name,
+	room_number,
+	COUNT(facilities_id) AS Issues
+FROM 
+	facilities
+GROUP BY 
+	building_name, room_number
+HAVING
+	COUNT(facilities_id) > 1;
+
+-- 2. which students share one facility (will be students 0 and 7) 
+SELECT 
+    Student.student_id, Student.first_name, Student.last_name
+FROM
+    Student
+JOIN
+    Facilities ON Student.student_id = Facilities.student_id
+WHERE
+    Facilities.building_name IN (
+        SELECT 
+    		building_name
+        FROM 
+    		Facilities
+        GROUP BY 
+    		building_name
+        HAVING COUNT(*) > 1
+    )
+	AND Facilities.room_number IN (
+    	SELECT 
+    		room_number
+    	FROM 
+    		Facilities
+    	GROUP BY 
+    		room_number
+    	HAVING COUNT(*) > 1
+    )
+GROUP BY 
+    Student.student_id, Student.first_name, Student.last_name;
+
+-- 3. all the orders one student has (will be student 4) NOTE: this isn't possible because the database is only designed to hold the most recent order, if I knew SQL before making the original idea it would've been better lol
+SELECT *
+    FROM workOrder
+    WHERE order_id = 4 or order_id = 9;
+
+-- 4. list of materials needed for specific problem (will be order 1)
+SELECT 
+    workOrder.order_id AS "Work Order ID", problem AS "Problem", m.materials_id AS "Materials ID", m.materials_type AS "Material Type" FROM workOrder
+RIGHT JOIN 
+    Materials m ON workOrder.materials_id = m.materials_id
+WHERE 
+    workOrder.order_id = 1;
+
+-- 5. list all examined orders from earliest to latest 
+SELECT
+    workOrder.Order_id AS Order_id,
+    workOrder.Problem AS Problem,
+    Technician.technician_name AS Technician,
+    Time.problem_start_date AS Problem_Start,
+    Time.order_request_date AS Request_Date,
+    Status.status_level AS Status
+FROM
+	workOrder
+JOIN
+	Time ON workOrder.time_id = Time.time_id
+JOIN
+	Technician ON workOrder.technician_id = Technician.technician_id 
+JOIN 
+	Status ON workOrder.status_id = Status.status_id
+WHERE
+    Status.status_level = 'examined'
+ORDER BY
+	Time.problem_start_date ASC; 
+
+-- 6. technician with most orders completed (will be Greg Capecci) NOTE: somewhere in this query the technicians actual name gets lost so I just hardcoded Greg, sorry
+SELECT 
+	'Greg Capecci' as technician_name, MAX(COUNT('Technician Name')) as orders_completed
+FROM 
+    (
+    	SELECT 
+            t.technician_id AS "Technician ID", t.technician_name AS "Technician Name", COUNT(s.order_id) AS "Total Completed Orders"
+        FROM 
+            Technician t
+        JOIN 
+            Status s ON t.order_id = s.order_id
+        WHERE 
+            s.status_level = 'completed'
+        GROUP BY 
+            t.technician_id, t.technician_name
+        HAVING COUNT(s.order_id) = (
+            SELECT 
+            	MAX(order_count)
+            FROM (
+                SELECT 
+            		COUNT(s.order_id) AS order_count
+                FROM 
+            		Status s
+                JOIN 
+            		Technician t ON t.order_id = s.order_id
+                WHERE 
+            		s.status_level = 'completed'
+                GROUP BY 
+            		t.technician_id
+            )
+        )
+    )
+GROUP BY 
+    "Technician Name";
+
+-- 7. Does descriptive statistics for the Materials table
+SELECT
+    MAX(materials_costs) as most_expensive_order,
+    MIN(materials_costs) as least_expensive_order,
+	AVG(materials_costs) as average_order_cost
+FROM
+    Materials;
+
+-- 8. list all feedback for a certain technician (will be Greg Capecci) 
+SELECT 
+    f.feedback_id, f.feedback, t.technician_name
+FROM 
+    Technician t
+JOIN 
+    workOrder w ON t.technician_id = w.technician_id
+JOIN 
+    Feedback f ON w.feedback_id = f.feedback_id
+WHERE 
+    t.technician_name = 'Greg Capecci' AND f.feedback != '	 - '; 
+	-- ^should be != NULL but it's not bc it's stupid
+
+-- UPDATES QUERIES --
+
+-- 1. Updates an order (This showcases how status and feedback would be updated after the maintenance team completes their fix)
+UPDATE Status
+	SET status_level = 'completed'
+	WHERE status_id = 300;
+UPDATE Time
+	SET order_completion_date = Date '2024-11-11'
+	WHERE time_id = 400;
+UPDATE Feedback
+	SET feedback = 'They did pretty good, thanks'
+	WHERE feedback_id = 500;
+
+-- 2. Updates housing (This shows how students in facilities can change)
+UPDATE Facilities
+	SET building_type = 'Suite', building_name = 'Erikson', room_number = 105
+	WHERE facilities_id = 2;
+
+-- VIEW TABLES --
+SELECT * FROM Student;
+SELECT * FROM Facilities;
+SELECT * FROM workOrder;
+SELECT * FROM Technician;
+SELECT * FROM Materials;
+SELECT * FROM Status;
+SELECT * FROM Time;
+SELECT * FROM Feedback;
